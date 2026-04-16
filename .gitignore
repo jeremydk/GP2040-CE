@@ -49,3 +49,7 @@ proto/*.pb.h
 
 # Claude Code plugin state
 .smee/
+
+# Local dev tooling
+justfile
+flash_nuke.uf2
