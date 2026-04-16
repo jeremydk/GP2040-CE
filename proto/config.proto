@@ -301,6 +301,9 @@ message LEDOptions
     optional int32 indexA1 = 23;
     optional int32 indexA2 = 24;
 
+    optional int32 indexE1 = 40;
+    optional int32 indexE2 = 41;
+
     optional PLEDType pledType = 25;
     optional int32 pledPin1 = 26;
     optional int32 pledPin2 = 27;

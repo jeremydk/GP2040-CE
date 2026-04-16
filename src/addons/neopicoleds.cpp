@@ -53,6 +53,8 @@ const std::string BUTTON_LABEL_L3 = "L3";
 const std::string BUTTON_LABEL_R3 = "R3";
 const std::string BUTTON_LABEL_A1 = "A1";
 const std::string BUTTON_LABEL_A2 = "A2";
+const std::string BUTTON_LABEL_E1 = "E1";
+const std::string BUTTON_LABEL_E2 = "E2";
 
 static std::vector<uint8_t> EMPTY_VECTOR;
 
@@ -664,6 +666,8 @@ std::vector<std::vector<Pixel>> NeoPicoLEDAddon::generatedLEDButtons(std::vector
             PIXEL(BUTTON_LABEL_R3, GAMEPAD_MASK_R3),
             PIXEL(BUTTON_LABEL_A1, GAMEPAD_MASK_A1),
             PIXEL(BUTTON_LABEL_A2, GAMEPAD_MASK_A2),
+            PIXEL(BUTTON_LABEL_E1, GAMEPAD_MASK_E1),
+            PIXEL(BUTTON_LABEL_E2, GAMEPAD_MASK_E2),
         },
     };
 
@@ -724,6 +728,8 @@ std::vector<std::vector<Pixel>> NeoPicoLEDAddon::generatedLEDStickless(vector<ve
             PIXEL(BUTTON_LABEL_R3, GAMEPAD_MASK_R3),
             PIXEL(BUTTON_LABEL_A1, GAMEPAD_MASK_A1),
             PIXEL(BUTTON_LABEL_A2, GAMEPAD_MASK_A2),
+            PIXEL(BUTTON_LABEL_E1, GAMEPAD_MASK_E1),
+            PIXEL(BUTTON_LABEL_E2, GAMEPAD_MASK_E2),
         },
     };
 
@@ -772,6 +778,8 @@ std::vector<std::vector<Pixel>> NeoPicoLEDAddon::generatedLEDWasd(std::vector<st
             PIXEL(BUTTON_LABEL_R3, GAMEPAD_MASK_R3),
             PIXEL(BUTTON_LABEL_A1, GAMEPAD_MASK_A1),
             PIXEL(BUTTON_LABEL_A2, GAMEPAD_MASK_A2),
+            PIXEL(BUTTON_LABEL_E1, GAMEPAD_MASK_E1),
+            PIXEL(BUTTON_LABEL_E2, GAMEPAD_MASK_E2),
         },
     };
 
@@ -820,6 +828,8 @@ std::vector<std::vector<Pixel>> NeoPicoLEDAddon::generatedLEDWasdFBM(std::vector
             PIXEL(BUTTON_LABEL_R3, GAMEPAD_MASK_R3),
             PIXEL(BUTTON_LABEL_A1, GAMEPAD_MASK_A1),
             PIXEL(BUTTON_LABEL_A2, GAMEPAD_MASK_A2),
+            PIXEL(BUTTON_LABEL_E1, GAMEPAD_MASK_E1),
+            PIXEL(BUTTON_LABEL_E2, GAMEPAD_MASK_E2),
         },
     };
 
@@ -889,6 +899,8 @@ uint8_t NeoPicoLEDAddon::setupButtonPositions()
     buttonPositions.emplace(BUTTON_LABEL_R3, ledOptions.indexR3);
     buttonPositions.emplace(BUTTON_LABEL_A1, ledOptions.indexA1);
     buttonPositions.emplace(BUTTON_LABEL_A2, ledOptions.indexA2);
+    buttonPositions.emplace(BUTTON_LABEL_E1, ledOptions.indexE1);
+    buttonPositions.emplace(BUTTON_LABEL_E2, ledOptions.indexE2);
     uint8_t buttonCount = 0;
     for (auto const& buttonPosition : buttonPositions)
     {

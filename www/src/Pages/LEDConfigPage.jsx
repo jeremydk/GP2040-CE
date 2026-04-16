@@ -164,7 +164,7 @@ const createDataSource = (ledButtonMap, buttonLabelType, swapTpShareLabels) => {
 	});
 
 	const dataSources = [
-		getLedButtons(buttonLabelType, available, true, swapTpShareLabels),
+		getLedButtons(buttonLabelType, available, false, swapTpShareLabels),
 		getLedButtons(buttonLabelType, assigned, true, swapTpShareLabels),
 	];
 
@@ -176,7 +176,7 @@ const getLedButtons = (buttonLabels, map, excludeNulls, swapTpShareLabels) => {
 	return orderBy(
 		Object.keys(current_buttons)
 			.filter((p) => p !== 'label' && p !== 'value')
-			.filter((p) => (excludeNulls ? map[p] > -1 : true))
+			.filter((p) => (excludeNulls ? map[p] > -1 : map[p] !== undefined))
 			.map((p) => {
 				return { id: p, label: current_buttons[p], value: map[p] };
 			}),

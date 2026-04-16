@@ -834,6 +834,8 @@ std::string setLedOptions()
     readIndex(ledOptions.indexR3, "ledButtonMap", "R3");
     readIndex(ledOptions.indexA1, "ledButtonMap", "A1");
     readIndex(ledOptions.indexA2, "ledButtonMap", "A2");
+    readIndex(ledOptions.indexE1, "ledButtonMap", "E1");
+    readIndex(ledOptions.indexE2, "ledButtonMap", "E2");
     readDoc(ledOptions.pledType, doc, "pledType");
     docToPin(ledOptions.pledPin1, doc, "pledPin1");
     docToPin(ledOptions.pledPin2, doc, "pledPin2");
@@ -894,6 +896,8 @@ std::string getLedOptions()
     writeIndex("ledButtonMap", "R3", ledOptions.indexR3);
     writeIndex("ledButtonMap", "A1", ledOptions.indexA1);
     writeIndex("ledButtonMap", "A2", ledOptions.indexA2);
+    writeIndex("ledButtonMap", "E1", ledOptions.indexE1);
+    writeIndex("ledButtonMap", "E2", ledOptions.indexE2);
     writeDoc(doc, "pledType", ledOptions.pledType);
     writeDoc(doc, "pledPin1", ledOptions.pledPin1);
     writeDoc(doc, "pledPin2", ledOptions.pledPin2);
@@ -960,6 +964,8 @@ std::string getButtonLayouts()
     writeDoc(doc, "ledLayout", "indexR3", ledOptions.indexR3);
     writeDoc(doc, "ledLayout", "indexA1", ledOptions.indexA1);
     writeDoc(doc, "ledLayout", "indexA2", ledOptions.indexA2);
+    writeDoc(doc, "ledLayout", "indexE1", ledOptions.indexE1);
+    writeDoc(doc, "ledLayout", "indexE2", ledOptions.indexE2);
 
     writeDoc(doc, "displayLayouts", "buttonLayoutId", displayOptions.buttonLayout);
     for (elementCtr = 0; elementCtr < layoutA.size(); elementCtr++) {

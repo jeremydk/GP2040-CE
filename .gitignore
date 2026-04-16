@@ -20,3 +20,32 @@ env.ini
 *docker-compose.yml
 www/src_gen/enums.ts
 /lib/NeoPico/src/generated/ws2812.pio.h
+
+# CMake in-source build
+/CMakeCache.txt
+/CMakeFiles/
+/cmake_install.cmake
+/Makefile
+/pico_flash_region.ld
+lib/**/CMakeFiles/
+lib/**/cmake_install.cmake
+lib/Makefile
+lib/*/Makefile
+lib/**/*.a
+
+# Firmware build output
+GP2040-CE_*
+
+# Generated / fetched
+/_deps/
+/pico-sdk/
+/picotool/
+/pioasm/
+/pioasm-install/
+/generated/
+/headers/version.h
+proto/*.pb.c
+proto/*.pb.h
+
+# Claude Code plugin state
+.smee/
