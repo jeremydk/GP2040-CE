@@ -56,6 +56,7 @@
 #define LWIP_HTTPD_CGI_SSI              0
 #define LWIP_HTTPD_SSI_INCLUDE_TAG      0
 #define LWIP_HTTPD_CUSTOM_FILES         1
+#define LWIP_HTTPD_FILE_EXTENSION       1
 #define LWIP_HTTPD_SUPPORT_POST         1
 #define LWIP_HTTPD_SUPPORT_V09          0
 #define LWIP_HTTPD_SUPPORT_11_KEEPALIVE 0 // Causes lockups with CGI requests

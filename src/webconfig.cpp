@@ -262,9 +262,8 @@ int set_file_data(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
     file->data = returnData->c_str();
     file->len = returnData->size();
     file->index = file->len;
-    file->http_header_included = true;
-    file->pextension = returnData;  // store for cleanup
-    file->is_custom_file = 1;
+    file->flags = FS_FILE_FLAGS_HEADER_INCLUDED;
+    file->pextension = returnData;
 
     return 1;
 }
@@ -2771,9 +2770,8 @@ int fs_open_custom(struct fs_file *file, const char *name)
             file->data = (const char *)file__index_html[0].data;
             file->len = file__index_html[0].len;
             file->index = file__index_html[0].len;
-            file->http_header_included = file__index_html[0].http_header_included;
+            file->flags = file__index_html[0].flags;
             file->pextension = NULL;
-            file->is_custom_file = 0;
             return 1;
         }
     }
@@ -2783,7 +2781,7 @@ int fs_open_custom(struct fs_file *file, const char *name)
 
 void fs_close_custom(struct fs_file *file)
 {
-    if (file && file->is_custom_file && file->pextension)
+    if (file && file->pextension)
     {
         delete static_cast<std::string*>(file->pextension);
         file->pextension = NULL;
