@@ -53,3 +53,5 @@ proto/*.pb.h
 # Local dev tooling
 justfile
 flash_nuke.uf2
+.backups/
+.playwright-cli/
