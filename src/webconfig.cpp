@@ -19,6 +19,7 @@
 #include <vector>
 #include <memory>
 #include <set>
+#include <new>
 
 #include <pico/types.h>
 
@@ -266,7 +267,17 @@ int set_file_data(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
     // allocation, no reallocation.
     constexpr size_t headerCapacity = 256;
     const size_t bufCapacity = headerCapacity + bodyLen;
-    char* buf = new char[bufCapacity](); // value-init zeros the whole buffer
+    // std::nothrow: the firmware compiles with C++ exceptions linked
+    // (libsupc++ __cxa_throw is in the binary), but there is no handler chain
+    // wrapping these handlers, so a thrown bad_alloc propagates to the main
+    // loop and aborts — on embedded that manifests as a hang. On the more
+    // conservative request path we'd rather return 0 (lwip serves 404) than
+    // wedge the device. The `()` after `[bufCapacity]` is still a value-init
+    // (zero-fill) on success.
+    char* buf = new (std::nothrow) char[bufCapacity]();
+    if (buf == nullptr) {
+        return 0;
+    }
 
     const int headerLen = snprintf(buf, headerCapacity,
         "HTTP/1.0 %s\r\n"
