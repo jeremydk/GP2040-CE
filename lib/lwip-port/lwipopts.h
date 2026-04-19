@@ -62,6 +62,23 @@
 #define LWIP_HTTPD_SUPPORT_11_KEEPALIVE 0 // Causes lockups with CGI requests
 #define LWIP_HTTPD_ABORT_ON_CLOSE_MEM_ERROR 1
 
+// Force tcp_write to copy response data into its own pbufs. Without this,
+// lwip's default (HTTP_IS_DATA_VOLATILE = 0 when LWIP_HTTPD_DYNAMIC_FILE_READ
+// is off) sends file->data by zero-copy reference — which is safe only for
+// ROM-backed static files. Our custom handlers stash heap-allocated buffers
+// into file->data (see webconfig.cpp set_file_data), and those buffers are
+// freed by fs_close_custom before all packets are ACKed. The resulting
+// use-after-free surfaces as freelist bookkeeping bytes at response offset
+// 0-7 on retransmit / delayed send for certain endpoints (getKeyMappings,
+// getMemoryReport, etc.). Forcing COPY makes lwip own a private copy of
+// every write, severing the lifetime dependency.
+//
+// Literal 0x01 is TCP_WRITE_FLAG_COPY (from lwip/tcp.h). Can't #include the
+// header here — lwipopts.h is pulled in by lwip's own headers, so including
+// lwip/tcp.h recursively breaks build ordering. The static_assert lives
+// next to the first user of the macro to confirm the value stays correct.
+#define HTTP_IS_DATA_VOLATILE(hs)       0x01
+
 #define LWIP_SINGLE_NETIF               1
 
 #endif /* __LWIPOPTS_H__ */

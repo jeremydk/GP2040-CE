@@ -35,7 +35,14 @@
 #include "lwip/apps/httpd.h"
 #include "lwip/def.h"
 #include "lwip/mem.h"
+#include "lwip/tcp.h"
 #include "addons/input_macro.h"
+
+// Guard the hardcoded 0x01 in HTTP_IS_DATA_VOLATILE (see lwipopts.h). If lwip
+// ever renumbers TCP_WRITE_FLAG_COPY this breaks the build loudly rather than
+// silently re-introducing the use-after-free.
+static_assert(TCP_WRITE_FLAG_COPY == 0x01,
+              "HTTP_IS_DATA_VOLATILE in lwipopts.h assumes TCP_WRITE_FLAG_COPY == 0x01");
 
 #define PATH_CGI_ACTION "/cgi/action"
 
