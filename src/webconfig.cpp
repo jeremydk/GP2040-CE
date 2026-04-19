@@ -232,10 +232,25 @@ struct DataAndStatusCode
 };
 
 // **** WEB SERVER Overrides and Special Functionality ****
+//
+// Why the raw char buffer instead of a std::string?
+//
+// Under any allocator that embeds freelist pointers in the first bytes of a
+// freed block (dlmalloc/newlib does: fd/bk inside small bins), the first 8
+// bytes of a freshly-malloc'd block hold stale pointer data. The 2nd request
+// after boot reuses the block the 1st request's std::string freed, and
+// libstdc++'s SSO-to-heap growth on this toolchain does not overwrite those
+// bytes before the buffer is handed to lwip via c_str() — the response goes
+// out with "<fd>\0<bk>\0" where "HTTP/1.0" should be. Observed symptom:
+// /api/getMemoryReport (and other endpoints on any 2nd-or-later request)
+// start with 0x20004764,0x20004764 = __malloc_av_+8, the bin header itself.
+//
+// Building the response in a plain `new char[total]()` (value-initialized,
+// so explicitly zeroed) plus snprintf for the headers and one memcpy for the
+// body bypasses the question entirely: every byte of the buffer is written
+// by us, in order, starting at offset 0.
 int set_file_data(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
 {
-    std::string* returnData = new std::string();
-
     const char* statusCodeStr = "";
     switch (dataAndStatusCode.statusCode)
     {
@@ -244,26 +259,34 @@ int set_file_data(fs_file* file, const DataAndStatusCode& dataAndStatusCode)
         case HttpStatusCode::_500: statusCodeStr = "500 Internal Server Error"; break;
     }
 
-    returnData->clear();
-    returnData->append("HTTP/1.0 ");
-    returnData->append(statusCodeStr);
-    returnData->append("\r\n");
-    returnData->append(
+    const size_t bodyLen = dataAndStatusCode.data.length();
+    // Headers here are fixed-shape; 256 bytes is comfortably over the longest
+    // rendered header block (status line + Server + Content-Type + CORS +
+    // Content-Length). Keeping this static means one size computation, one
+    // allocation, no reallocation.
+    constexpr size_t headerCapacity = 256;
+    const size_t bufCapacity = headerCapacity + bodyLen;
+    char* buf = new char[bufCapacity](); // value-init zeros the whole buffer
+
+    const int headerLen = snprintf(buf, headerCapacity,
+        "HTTP/1.0 %s\r\n"
         "Server: GP2040-CE " GP2040VERSION "\r\n"
         "Content-Type: application/json\r\n"
         "Access-Control-Allow-Origin: *\r\n"
-        "Content-Length: "
-    );
+        "Content-Length: %u\r\n\r\n",
+        statusCodeStr, static_cast<unsigned>(bodyLen));
+    if (headerLen < 0 || static_cast<size_t>(headerLen) >= headerCapacity)
+    {
+        delete[] buf;
+        return 0;
+    }
+    memcpy(buf + headerLen, dataAndStatusCode.data.data(), bodyLen);
 
-    returnData->append(std::to_string(dataAndStatusCode.data.length()));
-    returnData->append("\r\n\r\n");
-    returnData->append(dataAndStatusCode.data);
-    
-    file->data = returnData->c_str();
-    file->len = returnData->size();
+    file->data = buf;
+    file->len = headerLen + bodyLen;
     file->index = file->len;
     file->flags = FS_FILE_FLAGS_HEADER_INCLUDED;
-    file->pextension = returnData;
+    file->pextension = buf;
 
     return 1;
 }
@@ -2783,7 +2806,7 @@ void fs_close_custom(struct fs_file *file)
 {
     if (file && file->pextension)
     {
-        delete static_cast<std::string*>(file->pextension);
+        delete[] static_cast<char*>(file->pextension);
         file->pextension = NULL;
     }
 }
