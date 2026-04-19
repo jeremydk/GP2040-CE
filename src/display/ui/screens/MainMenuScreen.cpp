@@ -385,9 +385,19 @@ void MainMenuScreen::saveOptions() {
 
     if (changeRequiresSave) {
         bool saveHasChanged = false;
+        // "Web Config" is a one-shot boot action exposed as an item in the Input
+        // Mode submenu (InputMode_VALUELIST includes INPUT_MODE_CONFIG). Persisting
+        // it corrupts config.gamepadOptions.inputMode and breaks the web UI, which
+        // intentionally excludes CONFIG from its INPUT_MODES list. Reboot into
+        // webconfig via BootMode::WEBCONFIG and leave the stored mode untouched.
+        bool enterWebConfig = false;
         if (prevInputMode != updateInputMode) {
-            options.inputMode = updateInputMode;
-            saveHasChanged = true;
+            if (updateInputMode == INPUT_MODE_CONFIG) {
+                enterWebConfig = true;
+            } else {
+                options.inputMode = updateInputMode;
+                saveHasChanged = true;
+            }
         }
         if (prevDpadMode != updateDpadMode) {
             options.dpadMode = updateDpadMode;
@@ -411,7 +421,13 @@ void MainMenuScreen::saveOptions() {
         }
 
         if (saveHasChanged) {
-            EventManager::getInstance().triggerEvent(new GPStorageSaveEvent(true, changeRequiresReboot));
+            // If also entering webconfig, skip the save event's auto-reboot so
+            // the restart event below picks the reboot mode (WEBCONFIG).
+            bool restartAfterSave = changeRequiresReboot && !enterWebConfig;
+            EventManager::getInstance().triggerEvent(new GPStorageSaveEvent(true, restartAfterSave));
+        }
+        if (enterWebConfig) {
+            EventManager::getInstance().triggerEvent(new GPRestartEvent(System::BootMode::WEBCONFIG));
         }
         changeRequiresSave = false;
         changeRequiresReboot = false;

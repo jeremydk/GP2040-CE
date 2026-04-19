@@ -1337,6 +1337,12 @@ export default function SettingsPage() {
 		}
 
 		const inputMode = INPUT_MODES.find((o) => o.value == values.inputMode);
+		// Stored inputMode may be out-of-range (e.g. INPUT_MODE_CONFIG=255 from
+		// an older minimenu bug, or a value from a newer firmware). Render nothing
+		// rather than crashing on inputMode.labelKey.
+		if (!inputMode) {
+			return null;
+		}
 		switch (inputMode.labelKey) {
 			case 'input-mode-options.keyboard':
 				return keyboardModeSpecifics(
