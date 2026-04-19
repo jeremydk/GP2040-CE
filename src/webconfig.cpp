@@ -2782,7 +2782,15 @@ static const std::pair<const char*, HandlerFuncPtr> handlerFuncs[] =
     { "/api/getHeldPins", getHeldPins },
     { "/api/abortGetHeldPins", abortGetHeldPins },
     { "/api/getUsedPins", getUsedPins },
-    { "/api/getConfig", getConfig },
+    // /api/getConfig disabled: ConfigUtils::toJSON builds a tens-of-KB
+    // std::string via doubling-append and can throw bad_alloc on a
+    // fragmented heap. Because the firmware compiles with -fno-exceptions
+    // (via pico_cxx_options), an uncaught throw calls std::terminate and
+    // hangs the device. The web UI's Backup page already uses individual
+    // endpoints (getGamepadOptions, getPinMappings, etc.) so this only
+    // removes an external-tool path. getConfig() the function is kept
+    // because setConfig() still uses it internally for its response body.
+    //{ "/api/getConfig", getConfig },
     { "/api/getJoystickCenter", getJoystickCenter },
     { "/api/getJoystickCenter2", getJoystickCenter2 },
 #if !defined(NDEBUG)
