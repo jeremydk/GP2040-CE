@@ -615,7 +615,10 @@ std::string setProfileOptions()
         profileOptions.gpioMappingsSets[altsIndex].pins_count = NUM_BANK0_GPIOS;
 
         size_t profileLabelSize = sizeof(profileOptions.gpioMappingsSets[altsIndex].profileLabel);
-        strncpy(profileOptions.gpioMappingsSets[altsIndex].profileLabel, alt["profileLabel"], profileLabelSize - 1);
+        // `| ""` guards against ArduinoJson returning nullptr for a missing key —
+        // strncpy(dst, nullptr, n) is UB (hard-fault on Cortex-M0+, device hangs).
+        // Reachable via backup restore when the saved blob omits this field.
+        strncpy(profileOptions.gpioMappingsSets[altsIndex].profileLabel, alt["profileLabel"] | "", profileLabelSize - 1);
         profileOptions.gpioMappingsSets[altsIndex].profileLabel[profileLabelSize - 1] = '\0';
         profileOptions.gpioMappingsSets[altsIndex].enabled = alt["enabled"];
 
@@ -717,14 +720,17 @@ std::string setGamepadOptions()
     readDoc(gamepadOptions.usbDescOverride, doc, "usbDescOverride");
     readDoc(gamepadOptions.miniMenuGamepadInput, doc, "miniMenuGamepadInput");
     // Copy USB descriptor strings
+    // `| ""` guards against ArduinoJson returning nullptr for a missing key.
+    // strncpy(dst, nullptr, n) is UB → hard-fault → device hang on Cortex-M0+.
+    // Reachable via backup restore when the saved blob omits any of these.
     size_t strSize = sizeof(gamepadOptions.usbDescManufacturer);
-    strncpy(gamepadOptions.usbDescManufacturer, doc["usbDescManufacturer"], strSize - 1);
+    strncpy(gamepadOptions.usbDescManufacturer, doc["usbDescManufacturer"] | "", strSize - 1);
     gamepadOptions.usbDescManufacturer[strSize - 1] = '\0';
     strSize = sizeof(gamepadOptions.usbDescProduct);
-    strncpy(gamepadOptions.usbDescProduct, doc["usbDescProduct"], strSize - 1);
+    strncpy(gamepadOptions.usbDescProduct, doc["usbDescProduct"] | "", strSize - 1);
     gamepadOptions.usbDescProduct[strSize - 1] = '\0';
     strSize = sizeof(gamepadOptions.usbDescVersion);
-    strncpy(gamepadOptions.usbDescVersion, doc["usbDescVersion"], strSize - 1);
+    strncpy(gamepadOptions.usbDescVersion, doc["usbDescVersion"] | "", strSize - 1);
     gamepadOptions.usbDescVersion[strSize - 1] = '\0';
     readDoc(gamepadOptions.usbOverrideID, doc, "usbOverrideID");
     readDoc(gamepadOptions.usbVendorID, doc, "usbVendorID");
@@ -1172,8 +1178,13 @@ std::string setPinMappings()
             gpioMappings.pins[pin].customDpadMask = (uint32_t)doc[pinName]["customDpadMask"];
         }
     }
+    // `| ""` guards against ArduinoJson returning nullptr for a missing key —
+    // strncpy(dst, nullptr, n) is UB → hard-fault → device hang on Cortex-M0+.
+    // Reachable via backup restore: getPinMappings writes this key only when
+    // gpioMappings.profileLabel is non-empty, so any backup from a device
+    // with a default (empty) label omits it, and the restore POST crashes.
     size_t profileLabelSize = sizeof(gpioMappings.profileLabel);
-    strncpy(gpioMappings.profileLabel, doc["profileLabel"], profileLabelSize - 1);
+    strncpy(gpioMappings.profileLabel, doc["profileLabel"] | "", profileLabelSize - 1);
     gpioMappings.profileLabel[profileLabelSize - 1] = '\0';
     gpioMappings.enabled = doc["enabled"];
 
@@ -2400,7 +2411,10 @@ std::string setMacroAddonOptions()
 
     for (JsonObject macro : macros) {
         size_t macroLabelSize = sizeof(macroOptions.macroList[macrosIndex].macroLabel);
-        strncpy(macroOptions.macroList[macrosIndex].macroLabel, macro["macroLabel"], macroLabelSize - 1);
+        // `| ""` guards against ArduinoJson returning nullptr for a missing
+        // macroLabel key (same hazard as the other four sites patched in
+        // b251766a — strncpy(dst, nullptr, n) is UB on Cortex-M0+).
+        strncpy(macroOptions.macroList[macrosIndex].macroLabel, macro["macroLabel"] | "", macroLabelSize - 1);
         macroOptions.macroList[macrosIndex].macroLabel[macroLabelSize - 1] = '\0';
         macroOptions.macroList[macrosIndex].macroType = macro["macroType"].as<MacroType>();
         macroOptions.macroList[macrosIndex].useMacroTriggerButton = macro["useMacroTriggerButton"].as<bool>();
