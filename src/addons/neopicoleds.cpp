@@ -548,7 +548,53 @@ void NeoPicoLEDAddon::process() {
         as.HandleEvent(action);
     }
 
-    uint32_t buttonState = gamepad->state.dpad << 16 | gamepad->state.buttons;
+    // LEDs live in physical-button space; input lives in logical-button
+    // space. These diverge on alternate profiles (e.g. an SNES profile
+    // that remaps physical pin 6 from B1 to B2 — gamepad->state.buttons
+    // reports B2 pressed, but the LED we want lit is the one physically
+    // next to pin 6, which profile 0 canonically labels as B1).
+    //
+    // Resolve the "which buttons are pressed" state via the BASE profile's
+    // pin-to-action mapping, regardless of which profile is active for
+    // gamepad input. matrix.pixels + buttonPositions + AnimationStation's
+    // filter semantics all stay exactly as they were; only the source of
+    // truth for the button mask changes.
+    uint32_t buttonState = 0;
+    {
+        // Important: debouncedGpio lives on the MAIN gamepad, not the
+        // processed one (the main-loop memcpy at gp2040.cpp:335 copies
+        // only `state`, never `debouncedGpio`). ProcessedGamepad's
+        // debouncedGpio is uninitialized — reading it yields garbage
+        // and half the LEDs end up hard-lit from phantom "presses."
+        const Mask_t pressedGpio = Storage::getInstance().GetGamepad()->debouncedGpio;
+        const GpioMappingInfo* baseMap = Storage::getInstance().getGpioMappings().pins;
+        for (Pin_t pin = 0; pin < (Pin_t)NUM_BANK0_GPIOS; pin++) {
+            if (!(pressedGpio & (1u << pin))) continue;
+            switch (baseMap[pin].action) {
+                case GpioAction::BUTTON_PRESS_UP:    buttonState |= GAMEPAD_MASK_DU; break;
+                case GpioAction::BUTTON_PRESS_DOWN:  buttonState |= GAMEPAD_MASK_DD; break;
+                case GpioAction::BUTTON_PRESS_LEFT:  buttonState |= GAMEPAD_MASK_DL; break;
+                case GpioAction::BUTTON_PRESS_RIGHT: buttonState |= GAMEPAD_MASK_DR; break;
+                case GpioAction::BUTTON_PRESS_B1:    buttonState |= GAMEPAD_MASK_B1; break;
+                case GpioAction::BUTTON_PRESS_B2:    buttonState |= GAMEPAD_MASK_B2; break;
+                case GpioAction::BUTTON_PRESS_B3:    buttonState |= GAMEPAD_MASK_B3; break;
+                case GpioAction::BUTTON_PRESS_B4:    buttonState |= GAMEPAD_MASK_B4; break;
+                case GpioAction::BUTTON_PRESS_L1:    buttonState |= GAMEPAD_MASK_L1; break;
+                case GpioAction::BUTTON_PRESS_R1:    buttonState |= GAMEPAD_MASK_R1; break;
+                case GpioAction::BUTTON_PRESS_L2:    buttonState |= GAMEPAD_MASK_L2; break;
+                case GpioAction::BUTTON_PRESS_R2:    buttonState |= GAMEPAD_MASK_R2; break;
+                case GpioAction::BUTTON_PRESS_S1:    buttonState |= GAMEPAD_MASK_S1; break;
+                case GpioAction::BUTTON_PRESS_S2:    buttonState |= GAMEPAD_MASK_S2; break;
+                case GpioAction::BUTTON_PRESS_L3:    buttonState |= GAMEPAD_MASK_L3; break;
+                case GpioAction::BUTTON_PRESS_R3:    buttonState |= GAMEPAD_MASK_R3; break;
+                case GpioAction::BUTTON_PRESS_A1:    buttonState |= GAMEPAD_MASK_A1; break;
+                case GpioAction::BUTTON_PRESS_A2:    buttonState |= GAMEPAD_MASK_A2; break;
+                case GpioAction::BUTTON_PRESS_E1:    buttonState |= GAMEPAD_MASK_E1; break;
+                case GpioAction::BUTTON_PRESS_E2:    buttonState |= GAMEPAD_MASK_E2; break;
+                default:                             break;  // no LED for this action
+            }
+        }
+    }
     vector<Pixel> pressed;
     for (auto row : matrix.pixels)
     {
