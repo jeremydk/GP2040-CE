@@ -16,14 +16,17 @@ void GPShape::draw() {
     }
 
     uint16_t offsetX = ((getRenderer()->getDriver()->getMetrics()->width - (uint16_t)((double)(this->getViewport().right - this->getViewport().left) * scaleX)) / 2);
-    uint16_t offsetY = ((getRenderer()->getDriver()->getMetrics()->height - (uint16_t)((double)(this->getViewport().bottom - this->getViewport().top) * scaleY)) / 2);
+    // No offsetY: see the matching note in GPButton.cpp.
 
     if (scaleX > 0.0f) {
         baseX = ((this->x) * scaleX + this->getViewport().left) + offsetX;
     }
 
     if (scaleY > 0.0f) {
-        baseY = (this->y) * scaleY + this->getViewport().top + offsetY;
+        // See matching note in GPButton.cpp — PR #1594 shifted every shape's
+        // Y by offsetY to silence PVS-Studio, which visibly moved on-screen
+        // button layouts down by several pixels on normal boards.
+        baseY = (this->y) * scaleY + this->getViewport().top;
     }
 
     // base

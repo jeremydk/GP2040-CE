@@ -19,14 +19,21 @@ void GPButton::draw() {
     }
 
     uint16_t offsetX = ((getRenderer()->getDriver()->getMetrics()->width - (uint16_t)((double)(this->getViewport().right - this->getViewport().left) * scaleX)) / 2);
-    uint16_t offsetY = ((getRenderer()->getDriver()->getMetrics()->height - (uint16_t)((double)(this->getViewport().bottom - this->getViewport().top) * scaleY)) / 2);
+    // No offsetY: vertical origin comes from viewport.top. See note below
+    // for why we don't center vertically the way we center horizontally.
 
     if (scaleX > 0.0f) {
         baseX = ((this->x) * scaleX + this->getViewport().left) + offsetX;
     }
 
     if (scaleY > 0.0f) {
-        baseY = ((this->y) * scaleY + this->getViewport().top) + offsetY;
+        // Intentionally no `+ offsetY` here. Upstream PR #1594 added it to
+        // silence a PVS-Studio "unused variable" warning, but the effect is
+        // to shift every button layout down by (display_height -
+        // viewport_height)/2 on any board whose viewport doesn't fill the
+        // full display height. The viewport.top position is already the
+        // correct origin.
+        baseY = ((this->y) * scaleY + this->getViewport().top);
     }
 
     bool pinState = false;
