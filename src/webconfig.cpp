@@ -2577,6 +2577,109 @@ std::string abortGetHeldPins()
     return {};
 }
 
+// Debounce probe: samples GPIO in a tight loop for 5 s and reports the
+// worst-case bounce envelope per pin. An "envelope" is bounded by a
+// quiet period of 20 ms with no transitions. The reported value is the
+// longest observed interval between the first and last transition of a
+// single press-or-release event, in microseconds. The user's minimum
+// safe `debounceDelay` is ceil(max_envelope_ms) + a small margin.
+//
+// User workflow: hit the endpoint, press each button once (and release)
+// during the 5 s window, read the per-pin numbers.
+//
+// Runs inline in the webconfig main loop, so `rndis_task()` is pumped
+// every ~1 ms to keep lwip + the current TCP connection alive.
+std::string runDebounceProbe()
+{
+    constexpr uint32_t PROBE_DURATION_US = 5 * 1000 * 1000;
+    constexpr uint32_t QUIET_THRESHOLD_US = 20 * 1000;
+
+    struct PinBounce {
+        uint32_t envelopeStartUs;
+        uint32_t lastEdgeUs;
+        uint32_t maxEnvelopeUs;
+        uint32_t transitionCount;
+        bool inEnvelope;
+    };
+    PinBounce bounces[NUM_BANK0_GPIOS] = {};
+
+    // Initialize unassigned pins as pulled-up inputs so they can register
+    // presses even if the user hasn't wired them up in a profile yet.
+    std::vector<uint> uninitPins;
+    uint32_t eligiblePinsMask = 0;
+    for (uint32_t pin = 0; pin < NUM_BANK0_GPIOS; pin++) {
+        if (gpio_get_function(pin) == GPIO_FUNC_NULL) {
+            uninitPins.push_back(pin);
+            gpio_init(pin);
+            gpio_set_dir(pin, GPIO_IN);
+            gpio_pull_up(pin);
+            eligiblePinsMask |= (1u << pin);
+        } else if (gpio_get_function(pin) == GPIO_FUNC_SIO && !gpio_is_dir_out(pin)) {
+            eligiblePinsMask |= (1u << pin);
+        }
+    }
+
+    const uint32_t startUs = time_us_32();
+    uint32_t prevState = (~gpio_get_all()) & eligiblePinsMask;
+    uint32_t iterations = 0;
+    uint32_t rndisDeadline = startUs + 1000;
+
+    while ((time_us_32() - startUs) < PROBE_DURATION_US) {
+        const uint32_t nowUs = time_us_32();
+        const uint32_t newState = (~gpio_get_all()) & eligiblePinsMask;
+        const uint32_t changed = prevState ^ newState;
+
+        if (changed) {
+            // For each changed pin, update its bounce envelope.
+            uint32_t mask = changed;
+            while (mask) {
+                const uint32_t pin = __builtin_ctz(mask);
+                mask &= mask - 1;
+
+                PinBounce& b = bounces[pin];
+                if (!b.inEnvelope || (nowUs - b.lastEdgeUs) > QUIET_THRESHOLD_US) {
+                    b.envelopeStartUs = nowUs;
+                    b.inEnvelope = true;
+                }
+                const uint32_t env = nowUs - b.envelopeStartUs;
+                if (env > b.maxEnvelopeUs) b.maxEnvelopeUs = env;
+                b.lastEdgeUs = nowUs;
+                b.transitionCount++;
+            }
+            prevState = newState;
+        }
+
+        // Pump lwip / USB about once per millisecond.
+        if (++iterations >= 256 || nowUs >= rndisDeadline) {
+            iterations = 0;
+            rndisDeadline = nowUs + 1000;
+            rndis_task();
+        }
+    }
+
+    for (uint32_t pin : uninitPins) gpio_deinit(pin);
+
+    // Response: per-pin max envelope (µs) + transition count + the probe
+    // window. Client rounds envelope up to ms for the suggested
+    // debounceDelay. Only include pins that saw at least one transition
+    // so the response stays small.
+    DynamicJsonDocument doc(JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(NUM_BANK0_GPIOS)
+                            + NUM_BANK0_GPIOS * JSON_OBJECT_SIZE(2));
+    writeDoc(doc, "probeDurationUs", PROBE_DURATION_US);
+    writeDoc(doc, "quietThresholdUs", QUIET_THRESHOLD_US);
+    auto pins = doc.createNestedObject("pins");
+    for (uint32_t pin = 0; pin < NUM_BANK0_GPIOS; pin++) {
+        if (bounces[pin].transitionCount > 0) {
+            char key[8];
+            snprintf(key, sizeof(key), "pin%02u", static_cast<unsigned>(pin));
+            auto entry = pins.createNestedObject(key);
+            entry["maxEnvelopeUs"] = bounces[pin].maxEnvelopeUs;
+            entry["transitions"] = bounces[pin].transitionCount;
+        }
+    }
+    return serialize_json(doc);
+}
+
 std::string getConfig()
 {
     return ConfigUtils::toJSON(Storage::getInstance().getConfig());
@@ -2781,6 +2884,7 @@ static const std::pair<const char*, HandlerFuncPtr> handlerFuncs[] =
     { "/api/getMemoryReport", getMemoryReport },
     { "/api/getHeldPins", getHeldPins },
     { "/api/abortGetHeldPins", abortGetHeldPins },
+    { "/api/runDebounceProbe", runDebounceProbe },
     { "/api/getUsedPins", getUsedPins },
     // /api/getConfig disabled: ConfigUtils::toJSON builds a tens-of-KB
     // std::string via doubling-append and can throw bad_alloc on a
