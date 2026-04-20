@@ -12,6 +12,7 @@ import BackupPage from './BackupPage';
 import DisplayConfig from './DisplayConfig';
 import AddonsConfig from './AddonsConfig';
 import CaptureButton from './CaptureButton';
+import DebounceProbe from './DebounceProbe';
 import WiiAddon from './Addons/WiiAddon';
 import Rotary from './Addons/Rotary';
 import PCF8575 from './Addons/PCF8575';
@@ -36,6 +37,7 @@ export default {
 	DisplayConfig,
 	AddonsConfig,
 	CaptureButton,
+	DebounceProbe,
 	WiiAddon,
 	Rotary,
 	InputMacroAddon,

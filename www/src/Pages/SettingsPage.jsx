@@ -11,6 +11,7 @@ import useProfilesStore from '../Store/useProfilesStore';
 import { AppContext } from '../Contexts/AppContext';
 
 import ContextualHelpOverlay from '../Components/ContextualHelpOverlay';
+import DebounceProbe from '../Components/DebounceProbe';
 import KeyboardMapper from '../Components/KeyboardMapper';
 import Section from '../Components/Section';
 import WebApi, { baseButtonMappings } from '../Services/WebApi';
@@ -1802,6 +1803,15 @@ export default function SettingsPage() {
 															<Form.Text muted>
 																{t('SettingsPage:debounce-help-text')}
 															</Form.Text>
+														</Col>
+													</Form.Group>
+													<Form.Group className="row mb-3">
+														<Col sm={10}>
+															<DebounceProbe
+																onApply={(ms) =>
+																	setFieldValue('debounceDelay', ms)
+																}
+															/>
 														</Col>
 													</Form.Group>
 													<Form.Group className="row mb-5">

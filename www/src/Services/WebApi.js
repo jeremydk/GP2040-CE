@@ -691,6 +691,19 @@ async function abortGetHeldPins() {
 	}
 }
 
+async function runDebounceProbe(abortSignal) {
+	try {
+		const response = await Http.get(`${baseUrl}/api/runDebounceProbe`, {
+			signal: abortSignal,
+		});
+		return response.data;
+	} catch (error) {
+		if (error?.name === 'AbortError') return { canceled: true };
+		console.error(error);
+		return { error: error?.message || 'probe failed' };
+	}
+}
+
 async function reboot(bootMode) {
 	return Http.post(`${baseUrl}/api/reboot`, { bootMode })
 		.then((response) => response.data)
@@ -743,5 +756,6 @@ export default {
 	getUsedPins,
 	getHeldPins,
 	abortGetHeldPins,
+	runDebounceProbe,
 	reboot,
 };
