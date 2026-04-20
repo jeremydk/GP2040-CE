@@ -1743,7 +1743,51 @@ export default function SettingsPage() {
 														<Form.Label>
 															{t('SettingsPage:debounce-delay-label')}
 														</Form.Label>
-														<Col sm={3}>
+														<Col sm={5}>
+															<Form.Select
+																className="form-select-sm mb-2"
+																value={
+																	[0, 1, 3, 5, 10].includes(
+																		Number(values.debounceDelay),
+																	)
+																		? Number(values.debounceDelay)
+																		: 'custom'
+																}
+																onChange={(e) => {
+																	const v = e.target.value;
+																	if (v !== 'custom') {
+																		setFieldValue(
+																			'debounceDelay',
+																			Number(v),
+																		);
+																	}
+																}}
+															>
+																<option value={0}>
+																	{t('SettingsPage:debounce-preset-off')}
+																</option>
+																<option value={1}>
+																	{t('SettingsPage:debounce-preset-fast')}
+																</option>
+																<option value={3}>
+																	{t(
+																		'SettingsPage:debounce-preset-standard',
+																	)}
+																</option>
+																<option value={5}>
+																	{t(
+																		'SettingsPage:debounce-preset-cautious',
+																	)}
+																</option>
+																<option value={10}>
+																	{t(
+																		'SettingsPage:debounce-preset-verycautious',
+																	)}
+																</option>
+																<option value="custom">
+																	{t('SettingsPage:debounce-preset-custom')}
+																</option>
+															</Form.Select>
 															<Form.Control
 																type="number"
 																name="debounceDelay"
@@ -1755,6 +1799,9 @@ export default function SettingsPage() {
 																min={0}
 																max={5000}
 															/>
+															<Form.Text muted>
+																{t('SettingsPage:debounce-help-text')}
+															</Form.Text>
 														</Col>
 													</Form.Group>
 													<Form.Group className="row mb-5">

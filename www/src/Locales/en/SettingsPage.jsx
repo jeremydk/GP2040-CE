@@ -59,6 +59,14 @@ export default {
 	},
 	'profile-label': 'Profile',
 	'debounce-delay-label': 'Debounce Delay in milliseconds',
+	'debounce-preset-off': 'Off (0 ms)',
+	'debounce-preset-fast': 'Fast – 1 ms (quality arcade microswitches: Sanwa, Seimitsu, Crown OBSF)',
+	'debounce-preset-standard': 'Standard – 3 ms (generic microswitches, Cherry MX, most keyboards)',
+	'debounce-preset-cautious': 'Cautious – 5 ms (older or lower-quality switches, membrane)',
+	'debounce-preset-verycautious': 'Very Cautious – 10 ms (worn switches, persistent ghost inputs)',
+	'debounce-preset-custom': 'Custom (set value below)',
+	'debounce-help-text':
+		'Higher debounce rejects contact bounce but adds input latency. Start at Fast, bump up if you see ghost/double inputs.',
 	'mini-menu-gamepad-input': 'Use Gamepad Input for Display Mini Menu',
 	'ps4-mode-explanation-text':
 		'PS4 mode allows GP2040-CE to run as an authenticated PS4 controller.',
